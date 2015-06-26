@@ -1,0 +1,139 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package fouriertransform;
+
+import java.awt.Color;
+import javax.swing.JFrame;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.StandardXYItemRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+
+/**
+ *
+ * @author johnfeldmann
+ */
+public class FourierTransformClass {
+    public FourierTransformClass()
+    {
+        //default constructor
+    }
+    public FourierTransformClass(Double[] tempData)
+    {
+        calculateFourierTransform(tempData);
+    }
+    
+    public Double[][] calculateFourierTransform(Double[] tempData)      
+    {   
+        int numberOfFourierCoefficients = 8; //this is arbitrary, depending on how close of an approx you want
+        Double[][] fourierTransformCoefficients = new Double[numberOfFourierCoefficients][2]; //will hold a fourier coefficients
+     
+        for(int i=0; i<numberOfFourierCoefficients; i++)
+        {
+            fourierTransformCoefficients[i][0] = 0.0;  //set all a elements to 0.0
+            fourierTransformCoefficients[i][1] = 0.0;  //set all b elements to 0.0
+        }
+                    
+        int N = tempData.length;
+        System.out.println("N is " + N);
+        
+        for(int i=0; i<numberOfFourierCoefficients; i++)
+        {
+            for(int j=0; j<tempData.length; j++)
+            {
+                fourierTransformCoefficients[i][0] = fourierTransformCoefficients[i][0] + 2*tempData[j]*Math.cos(2*Math.PI*i*j/tempData.length)/tempData.length;
+                fourierTransformCoefficients[i][1] = fourierTransformCoefficients[i][1] + 2*tempData[j]*Math.sin(2*Math.PI*i*j/tempData.length)/tempData.length;
+            }
+            
+            System.out.println("a_" + i + "=" + fourierTransformCoefficients[i][0] + ", " 
+                    + "b_" + i + "=" + fourierTransformCoefficients[i][1]);
+
+        }
+
+        fourierTransformCoefficients[0][0] = fourierTransformCoefficients[0][0]/2.0; //this term's norm is 1/T, not 2/T
+        
+        plotFourierApproximationOfFunction(tempData, fourierTransformCoefficients);
+        
+        return fourierTransformCoefficients;
+
+    }
+       
+    private void plotFourierApproximationOfFunction(Double[] data, Double[][] coefficients)
+    {
+        XYSeries dataSeries;
+        dataSeries = new XYSeries("Germany 1996-2014");
+        
+        for (int i=0; i<data.length; i++)
+        {
+            dataSeries.add(i, data[i]);
+        }
+        
+        XYSeries dataSeries2;
+        dataSeries2 = new XYSeries("Fourier Approximation " + coefficients.length);
+        
+        Double[] fourierApproxData = new Double[data.length];
+        Double asum = 0.0;
+        Double bsum = 0.0;
+
+        for (int i=0; i<data.length; i++)
+        {
+            asum = 0.0;
+            bsum = 0.0;
+            
+            for (int j=0; j<coefficients.length; j++)
+            {
+                asum = asum + coefficients[j][0]*Math.cos(2.0*Math.PI*j*i/data.length);
+                bsum = bsum + coefficients[j][1]*Math.sin(2.0*Math.PI*j*i/data.length);
+            }
+            
+            fourierApproxData[i] = asum + bsum;
+        }        
+                 
+        for (int i=0; i<fourierApproxData.length; i++)
+        {
+            dataSeries2.add(i, fourierApproxData[i]);
+        }
+        
+        XYSeriesCollection dataSet = new XYSeriesCollection(dataSeries);
+        XYSeriesCollection dataSet2 = new XYSeriesCollection(dataSeries2);
+        
+        // Generate the graph
+        JFreeChart chart = ChartFactory.createXYLineChart(
+                "Example", // Title
+                "Month", // x-axis Label
+                "Inflation M/M", // y-axis Label
+                dataSet, // Dataset
+                PlotOrientation.VERTICAL,
+                true, // Show Legend
+                true, // Use tooltips
+                false // Configure chart to generate URLs?
+        );
+
+        ChartPanel mychartPanel = new ChartPanel(chart); //adds chart to a jFreeChart panel
+
+        JFrame plotFrame = new JFrame();
+        plotFrame.add(mychartPanel);
+        plotFrame.setSize(800, 500);
+        plotFrame.setVisible(true);
+        
+        chart.setBackgroundPaint(Color.white);
+        XYPlot plot = chart.getXYPlot();
+        plot.setBackgroundPaint(Color.cyan);
+        
+        XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) plot.getRenderer();
+        plot.setDataset(1,dataSet2);
+        plot.setRenderer(1, new StandardXYItemRenderer());
+
+    
+    } //end private void plotFourierApproximationOfFunction
+    
+}
+
